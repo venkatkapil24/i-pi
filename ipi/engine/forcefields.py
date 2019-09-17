@@ -39,6 +39,14 @@ try:
 except Exception as quippy_exc:
     quippy = None
 
+try:
+    import hiphive
+    from ase.io import read, write
+    #from hiphive.calculators import ForceConstantCalculator
+except Exception as hiphive_exc:
+    hiphive = None
+
+
 class ForceRequest(dict):
 
     """An extension of the standard Python dict class which only has a == b
@@ -476,6 +484,89 @@ class FFQUIP(ForceField):
         u = old_div(self.atoms.energy, self.energy_conv)
         f = old_div(self.atoms.force.T.flatten(), self.force_conv)
         v = old_div(np.triu(self.atoms.virial), self.energy_conv)
+
+        r["result"] = [u, f.reshape(nat * 3), v, ""]
+        r["status"] = "Done"
+
+
+class FFHiphive(ForceField):
+
+    """Basic fully pythonic force provider.
+
+    Computes an arbitrary interaction potential implemented in QUIP.
+    Parallel evaluation with threads.
+
+    Attributes:
+        parameters: A dictionary of the parameters used by QUIP. Of the
+            form {'name': value}.
+        requests: During the force calculation step this holds a dictionary
+            containing the relevant data for determining the progress of the step.
+            Of the form {'atoms': atoms, 'cell': cell, 'pars': parameters,
+                         'status': status, 'result': result, 'id': bead id,
+                         'start': starting time}.
+    """
+
+    def __init__(self, init_file, model_potential_file, latency=1.0e-3, name="", pars=None, dopbc=True, threaded=False):
+        """Initialises the Hiphive interface.
+
+        Args:
+        pars: Mandatory dictionary, giving the parameters needed by QUIP.
+        """
+        if hiphive is None:
+            info("Hiphive import failed", verbosity.low)
+            raise hiphive_exc
+
+        # a socket to the communication library is created or linked
+        super(FFHiphive, self).__init__(latency, name, pars, dopbc, threaded=threaded)
+        self.init_file = init_file
+        self.model_potential_file = model_potential_file
+
+        self.atoms = read(self.init_file)
+        self.fcp = hiphive.ForceConstantPotential.read(self.model_potential_file)
+        self.fcs = self.fcp.get_force_constants(self.atoms)
+        self.atoms.set_calculator(hiphive.calculators.ForceConstantCalculator(self.fcs))
+
+        # Initializes the conversion factors from i-pi to QUIP
+        self.len_conv = unit_to_user("length", "angstrom", 1)
+        self.energy_conv = unit_to_user("energy", "electronvolt", 1)
+        self.force_conv = unit_to_user("force", "ev/ang", 1)
+
+    def poll(self):
+        """Polls the forcefield checking if there are requests that should
+        be answered, and if necessary evaluates the associated forces and energy."""
+
+        # We have to be thread-safe, as in multi-system mode this might get
+        # called by many threads at once.
+        with self._threadlock:
+            for r in self.requests:
+                if r["status"] == "Queued":
+                    r["status"] = "Running"
+                    r["t_dispatched"] = time.time()
+                    self.evaluate(r)
+
+    def evaluate(self, r):
+        """ The function that evaluates the
+        QUIP interaction potential."""
+
+        # Obtains the positions and the cell.
+        q = r["pos"].reshape((-1, 3))
+        h, ih = r["cell"]
+
+        nat = len(q)
+
+        # Performs conversion of units.
+        q *= self.len_conv
+        h *= self.len_conv
+
+        # Updates the QUIP atoms object.
+        self.atoms.set_positions(q)
+        self.atoms.set_cell(h.T)
+
+        # Calculates the energies, forces and the virial.
+        u = self.atoms.get_potential_energy() / self.energy_conv
+        f = self.atoms.get_forces()  / self.force_conv
+        f = self.atoms.get_forces()  / self.force_conv
+        v = np.zeros((3,3), float) / self.energy_conv
 
         r["result"] = [u, f.reshape(nat * 3), v, ""]
         r["status"] = "Done"

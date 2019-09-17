@@ -99,6 +99,7 @@ class InputSimulation(Input):
               "ffsocket": (iforcefields.InputFFSocket, {"help": iforcefields.InputFFSocket.default_help}),
               "fflj": (iforcefields.InputFFLennardJones, {"help": iforcefields.InputFFLennardJones.default_help}),
               "ffquip": (iforcefields.InputFFQUIP, {"help": iforcefields.InputFFQUIP.default_help}),
+              "ffhiphive": (iforcefields.InputFFHiphive, {"help": iforcefields.InputFFHiphive.default_help}),
               "ffdebye": (iforcefields.InputFFDebye, {"help": iforcefields.InputFFDebye.default_help}),
               "ffplumed": (iforcefields.InputFFPlumed, {"help": iforcefields.InputFFPlumed.default_help}),
               "ffyaff": (iforcefields.InputFFYaff, {"help": iforcefields.InputFFYaff.default_help})
@@ -159,6 +160,10 @@ class InputSimulation(Input):
                     _iobj = iforcefields.InputFFQUIP()
                     _iobj.store(_obj)
                     self.extra[_ii] = ("ffquip", _iobj)
+                elif isinstance(_obj, eforcefields.FFHiphive):
+                    _iobj = iforcefields.InputFFHiphive()
+                    _iobj.store(_obj)
+                    self.extra[_ii] = ("ffhiphive", _iobj)
                 elif isinstance(_obj, eforcefields.FFDebye):
                     _iobj = iforcefields.InputFFDebye()
                     _iobj.store(_obj)
@@ -204,7 +209,7 @@ class InputSimulation(Input):
                 syslist.append(v.fetch())
             elif k == "system_template":
                 syslist += v.fetch()  # this will actually generate automatically a bunch of system objects with the desired properties set automatically to many values
-            elif k == "ffsocket" or k == "fflj" or k == 'ffquip' or k == "ffdebye" or k == "ffplumed":
+            elif k == "ffsocket" or k == "fflj" or k == 'ffquip' or k == 'ffhiphive' or k == "ffdebye" or k == "ffplumed":
                 print("fetching", k)
                 fflist.append(v.fetch())
             elif k == "ffyaff":

@@ -57,7 +57,9 @@ class Client(DriverSocket):
                     sys.exit(1)
             else:
                 raise NameError("Interface mode " + mode + " is not implemented (should be unix/inet)")
-            super(Client, self).__init__(socket=_socket)
+            #super(Client, self).__init__(socket=_socket)
+            super(DriverSocket, self).__init__(_socket.family, _socket.type, _socket.proto,
+                        fileno=socket.dup(_socket.fileno()))
         else:
             super(Client, self).__init__(socket=None)
 
@@ -68,6 +70,7 @@ class Client(DriverSocket):
         self._cellih = np.zeros((3, 3), np.float64)
         self._nat = np.int32()
         self._callback = None
+        self._buf = np.zeros(0, np.byte)
 
     def _getforce(self):
         """Dummy _getforce routine.
@@ -120,8 +123,9 @@ class Client(DriverSocket):
             while True:
 
                 # receive message
+                print ("WAITING FOR MESSAGE")
                 msg = self.recv_msg()
-
+                print ("MESSAGE", msg)
                 # process message and respond
                 if msg == "":
                     print("Server shut down.")
