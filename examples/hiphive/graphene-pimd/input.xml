@@ -1,0 +1,33 @@
+<simulation verbosity='high' threading='false'>
+  <output prefix='simulation'>
+    <properties stride='2' filename='out'>
+      [step, time{picosecond}, conserved, temperature{kelvin}, kinetic_opsc, potential_opsc]
+    </properties>
+    <trajectory stride='20' filename='positions' format='pdb'> positions </trajectory>
+  </output>
+  <total_steps> 200000 </total_steps>
+  <ffhiphive name='hiphive'>
+    <init_file> hiphive.xyz </init_file>
+    <model_potential_file> hiphive.fcp  </model_potential_file>
+  </ffhiphive>
+  <system>
+    <initialize nbeads='16'>
+      <file mode='xyz'> init.xyz </file>
+      <velocities mode='thermal' units='kelvin'>300</velocities>
+    </initialize>
+    <forces>
+      <force forcefield='hiphive' fd_epsilon='1e-3'> </force>
+    </forces>
+    <ensemble>
+      <temperature units='kelvin'> 300 </temperature>
+    </ensemble>
+    <motion mode='dynamics'>
+      <dynamics mode='sc'>
+        <thermostat mode='pile_l'>
+          <tau units='femtosecond'> 250 </tau>
+        </thermostat>
+        <timestep units='femtosecond'> 0.5 </timestep>
+      </dynamics>
+    </motion>
+  </system>
+</simulation>
