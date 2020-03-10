@@ -761,11 +761,12 @@ class BaroRGB(Barostat):
         """Calculates the elastic strain energy of the cell."""
 
         # NOTE: since there are nbeads replicas of the unit cell, the enthalpy contains a nbeads factor
-        eps = np.dot(self.cell.h, self.h0.ih)
-        eps = np.dot(eps.T, eps)
-        eps = 0.5 * (eps - np.identity(3))
+        #eps = np.dot(self.cell.h, self.h0.ih)
+        #eps = np.dot(eps.T, eps)
+        #eps = 0.5 * (eps - np.identity(3))
 
-        return self.h0.V * np.trace(np.dot(self.stressext, eps)) * self.beads.nbeads
+        #return self.h0.V * np.trace(np.dot(self.stressext, eps)) * self.beads.nbeads
+        return self.cell.V * self.pext * self.beads.nbeads
 
     def get_cell_jacobian(self):
         """Calculates the energy term that accounts for the size of the box."""
@@ -786,8 +787,9 @@ class BaroRGB(Barostat):
         dt3 = dt**3 / 3.0
         m = dstrip(self.beads.m3)[0].reshape(self.beads.natoms, 3)
 
-        hh0 = np.dot(self.cell.h, self.h0.ih)
-        pi_ext = np.dot(hh0, np.dot(self.stressext, hh0.T)) * self.h0.V / self.cell.V
+        #hh0 = np.dot(self.cell.h, self.h0.ih)
+        #pi_ext = np.dot(hh0, np.dot(self.stressext, hh0.T)) * self.h0.V / self.cell.V
+        pi_ext = np.eye(3) * self.pext
         L = np.diag([3, 2, 1])
 
         stress = dstrip(self.stress_mts(level))
