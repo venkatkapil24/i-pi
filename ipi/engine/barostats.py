@@ -27,7 +27,7 @@ from ipi.engine.thermostats import Thermostat
 from ipi.engine.cell import Cell
 
 
-__all__ = ['Barostat', 'BaroBZP', 'BaroRGB', 'BaroSCBZP']
+__all__ = ['Barostat', 'BaroBZP', 'BaroRGB', 'BaroSCBZP', 'BaroSCRGB']
 
 
 class Barostat(dobject):
@@ -820,3 +820,68 @@ class BaroRGB(Barostat):
             self.nm.pnm[0, 3 * i:3 * (i + 1)] = np.dot(expp, self.nm.pnm[0, 3 * i:3 * (i + 1)])
 
         self.cell.h = np.dot(expq, self.cell.h)
+
+
+class BaroSCRGB(BaroRGB):
+   """The Suzuki-Chin Raiteri-Gale-Bussi constant stress barostat class (JPCM 23, 334213, 2011).
+
+      Just extends the standard class adding finite-dt propagators for the barostat
+      velocities, positions, piston.
+
+      Depend objects:
+      p: The momentum matrix associated with the cell degrees of freedom.
+      m: The mass associated with the cell degree of freedom.
+      """
+
+   def pstep(self, level=0):
+      """Propagates the momenta for half a time step."""
+
+      dt = self.pdt[level]
+      dt2 = dt**2
+      dt3 = dt**3/3.0
+      m = dstrip(self.beads.m3)[0].reshape(self.beads.natoms,3)
+
+      hh0=np.dot(self.cell.h, self.h0.ih)
+      pi_ext=np.dot(hh0, np.dot(self.stressext, hh0.T)) * self.h0.V / self.cell.V
+      L=np.diag([3,2,1])
+
+      stress = dstrip(self.stress_mts_sc(level))
+      self.p += dt * (self.cell.V * np.triu(stress))
+      
+      # integerates the kinetic part of the stress with the force at the inner-most level.
+      if(level == self.nmtslevels - 1):
+
+         self.p += dt * (self.cell.V * np.triu(-self.beads.nbeads*pi_ext) + Constants.kb*self.temp*L)
+
+         pc = dstrip(self.beads.pc).reshape(self.beads.natoms,3)
+         fc = np.sum(dstrip(self.forces.forces_mts(level)) * (1 + self.forces.coeffsc_part_1), axis = 0).reshape(self.beads.natoms,3) / self.beads.nbeads
+         fcTonm = (fc / m).T
+
+         self.p += np.triu(dt2 * np.dot(fcTonm,pc) + dt3 * np.dot(fcTonm,fc)) * self.beads.nbeads
+
+
+   def pscstep(self):
+      """Propagates the momentum of the barostat with respect to the 
+      high order part of the Suzuki-Chin stress"""
+
+      # integrates with respect to the "high order" part of the stress with a timestep of dt /2
+      self.p += np.triu(self.dt / 2 * (self.cell.V * self.stress_sc))
+            
+
+   def qcstep(self):
+     """Propagates the centroid position and momentum and the volume."""
+
+     v = self.p/self.m[0]
+     halfdt = self.qdt
+     expq, expp = (matrix_exp(v*halfdt), matrix_exp(-v*halfdt))
+
+     m = dstrip(self.beads.m)
+
+     sinh = np.dot(invert_ut3x3(v),(expq-expp)/(2.0))
+     for i in range(self.beads.natoms):
+        self.nm.qnm[0,3*i:3*(i+1)] = np.dot(expq, self.nm.qnm[0,3*i:3*(i+1)])
+        self.nm.qnm[0,3*i:3*(i+1)] += np.dot(sinh, dstrip(self.nm.pnm)[0,3*i:3*(i+1)]/m[i])
+        self.nm.pnm[0,3*i:3*(i+1)] = np.dot(expp, self.nm.pnm[0,3*i:3*(i+1)])
+
+     self.cell.h = np.dot(expq,self.cell.h)
+

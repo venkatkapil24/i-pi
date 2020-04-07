@@ -42,7 +42,7 @@ class InputBaro(Input):
                                     ideas from the Bussi-Zykova-Parrinello barostat for classical MD with ideas from the
                                     Martyna-Hughes-Tuckerman centroid barostat for PIMD; see Ceriotti, More, Manolopoulos, Comp. Phys. Comm. 2013 for
                                     implementation details.""",
-                                         "options": ["dummy", "isotropic", "anisotropic", "sc-isotropic"]})}
+                                         "options": ["dummy", "isotropic", "anisotropic", "sc-isotropic", "sc-anisotropic"]})}
     fields = {"thermostat": (InputThermo, {"default": input_default(factory=ipi.engine.thermostats.Thermostat),
                                            "help": "The thermostat for the cell. Keeps the cell velocity distribution at the correct temperature. Note that the 'pile_l', 'pile_g', 'nm_gle' and 'nm_gle_g' options will not work for this thermostat."}),
               "tau": (InputValue, {"default": 1.0,
@@ -82,6 +82,10 @@ class InputBaro(Input):
             self.mode.store("anisotropic")
             self.p.store(baro.p)
             self.h0.store(baro.h0)
+        elif type(baro) is BaroSCRGB:
+            self.mode.store("sc-anisotropic")
+            self.p.store(baro.p)
+            self.h0.store(baro.h0)
         elif type(baro) is Barostat:
             self.mode.store("dummy")
         else:
@@ -104,6 +108,13 @@ class InputBaro(Input):
             if self.p._explicit: baro.p = self.p.fetch()
         elif self.mode.fetch() == "anisotropic":
             baro = BaroRGB(thermostat=self.thermostat.fetch(), tau=self.tau.fetch())
+            if self.p._explicit: baro.p = self.p.fetch()
+            if self.h0._explicit:
+                baro.h0 = self.h0.fetch()
+            else:
+                raise ValueError("Reference cell MUST be specified for an anisotropic barostat")
+        elif self.mode.fetch() == "sc-anisotropic":
+            baro = BaroSCRGB(thermostat=self.thermostat.fetch(), tau=self.tau.fetch())
             if self.p._explicit: baro.p = self.p.fetch()
             if self.h0._explicit:
                 baro.h0 = self.h0.fetch()
