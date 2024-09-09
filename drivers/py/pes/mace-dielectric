@@ -20,7 +20,7 @@ Example: python driver.py -m mace -u -o model.json,template.xyz
 """
 
 
-class MACEProperty_driver(ASEDriver):
+class MACEDielectric_driver(ASEDriver):
     def __init__(self, args=None, verbose=False):
         if MACECalculator is None:
             raise ImportError("Couldn't load mace bindings")
