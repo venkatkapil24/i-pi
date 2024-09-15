@@ -61,8 +61,8 @@ class MACE_driver(Dummy_driver):
         except FileNotFoundError:
             raise FileNotFoundError(f"Error: File {file_path} not found." + '\n' + ERROR_MSG)
 
-        except json.JSONDecodeError:
-            raise json.JSONDecodeError(f"Error: Failed to decode JSON from {file_path}." + '\n' + ERROR_MSG)
+        except json.JSONDecodeError as e:
+            raise json.JSONDecodeError(f"Error: Failed to decode JSON from {file_path}." + '\n' + ERROR_MSG, pos=e.pos, doc=e.doc)
 
         # Proceed with initializing the calculator if the file was read successfully
         self.ase_calculator = MACECalculator(**calc_params)

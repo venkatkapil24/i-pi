@@ -1,7 +1,7 @@
 """ An interface for the [MACE](https://github.com/ACEsuit/mace) calculator """
 
 import sys
-from .ase import ASEDriver
+from .mace import MACE_driver
 from ipi.utils.units import unit_to_internal, unit_to_user
 
 try:
@@ -13,39 +13,34 @@ __DRIVER_NAME__ = "mace-dielectric"
 __DRIVER_CLASS__ = "MACEDielectric_driver"
 
 ERROR_MSG = """
-MACE driver requires specification of a .json model,
-and a template file that describes the chemical makeup of the structure.
+MACEDielectric driver requires specification of an ASE formatted initialization file (e.g. an extended xyz file), a json formatted file with the keyword arguments for the MACE calculator, and a Boolean specifying if the derivatives of the dielectric response should be calculated.
 
-Example: python driver.py -m mace -u -o model.json,template.xyz
+Example: python driver.py -m mace -u -o template.xyz,mace_calculator.json,True
+
+If the json file is not provided, the default file 'mace_calculator.json' will be checked for. A default value of False will be assumed if the Boolean is not specified.
 """
 
 
-class MACEDielectric_driver(ASEDriver):
-    def __init__(self, args=None, verbose=False):
-        if MACECalculator is None:
-            raise ImportError("Couldn't load mace bindings")
-
-        super().__init__(args, verbose, ERROR_MSG)
-
+class MACEDielectric_driver(MACE_driver):
 
     def check_arguments(self):
-        """Check the arguments requuired to run the driver
-
+        """
+        Check the arguments requuired to run the driver
         This loads the potential and atoms template in MACE
         """
 
         super().check_arguments()
 
-        if len(self.args) < 2:
-            sys.exit(self.error_msg)
-
-        self.ase_calculator = MACECalculator(model_paths=self.args[1], device="cpu",  model_type='DipolePolarizabilityMACE')
-        
-        def str_to_bool(s): 
-            return True if s == "True" else False if s == "False" else None
-
-        self.derivative = str_to_bool(self.args[2])
-        assert self.derivative in [True, False]
+        # Check and parse self.derivative from self.args[2] (if available)
+        if len(self.args) > 2:
+            if self.args[2] == "True":
+                self.derivative = True
+            elif self.args[2] == "False":
+                self.derivative = False
+            else:
+                raise ValueError(f"Invalid value for derivative: {self.args[2]}. Expected 'True' or 'False'." + '\n' + ERROR_MSG)
+        else:
+            self.derivative = False
 
 
     def __call__(self, cell, pos):
