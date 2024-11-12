@@ -53,7 +53,7 @@ class Planetary(Motion):
         thermostat=None,
         barostat=None,
         fixcom=False,
-        fixatoms=None,
+        fixatoms_dof=None,
         nmts=None,
     ):
         """Initialises a "dynamics" motion object.
@@ -73,7 +73,7 @@ class Planetary(Motion):
         # the planetary step just computes constrained-centroid properties so it
         # should not advance the timer
         self._dt = depend_value(name="dt", value=0.0)
-        self.fixatoms = np.asarray([])
+        self.fixatoms_dof = np.asarray([])
         self.fixcom = True
 
         # nvt-cc means contstant-temperature with constrained centroid
@@ -85,7 +85,7 @@ class Planetary(Motion):
             thermostat=thermostat,
             nmts=nmts,
             fixcom=fixcom,
-            fixatoms=fixatoms,
+            fixatoms_dof=fixatoms_dof,
         )
 
     def bind(self, ens, beads, nm, cell, bforce, prng, omaker):
@@ -115,8 +115,8 @@ class Planetary(Motion):
         self.basenm = nm
 
         # copies of all of the helper classes that are needed to bind the ccdyn object
-        self.dbeads = beads.copy(nbeads=self.nbeads)
-        self.dcell = cell.copy()
+        self.dbeads = beads.clone(nbeads=self.nbeads)
+        self.dcell = cell.clone()
         self.dforces = bforce.copy(self.dbeads, self.dcell)
 
         # options for NM propagation - hardcoded frequencies unless using a GLE thermo

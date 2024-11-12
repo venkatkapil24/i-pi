@@ -51,7 +51,7 @@ class NormalModeMover(Motion):
     def __init__(
         self,
         fixcom=False,
-        fixatoms=None,
+        fixatoms_dof=None,
         mode="imf",
         dynmat=np.zeros(0, float),
         prefix="",
@@ -85,7 +85,7 @@ class NormalModeMover(Motion):
         refdynmatrix : A 3Nx3N array that stores the refined dynamic matrix.
         """
 
-        super(NormalModeMover, self).__init__(fixcom=fixcom, fixatoms=fixatoms)
+        super(NormalModeMover, self).__init__(fixcom=fixcom, fixatoms_dof=fixatoms_dof)
 
         # Finite difference option.
         self.mode = mode
@@ -145,9 +145,9 @@ class NormalModeMover(Motion):
         self.m = dstrip(self.beads.m)
         self.calc.bind(self)
 
-        self.dbeads = self.beads.copy(nbeads=self.nparallel)
-        self.dcell = self.cell.copy()
-        self.dforces = self.forces.copy(self.dbeads, self.dcell)
+        self.dbeads = self.beads.clone(nbeads=self.nparallel)
+        self.dcell = self.cell.clone()
+        self.dforces = self.forces.clone(self.dbeads, self.dcell)
 
     def step(self, step=None):
         """Executes one step of phonon computation."""

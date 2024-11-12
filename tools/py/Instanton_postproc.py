@@ -204,7 +204,6 @@ def get_rp_freq(w0, nbeads, temp, mode="rate"):
         sys.exit()
 
     if mode == "rate":
-
         for n in range(w0.size):
             for k in range(nbeads):
                 if w0[n] == 0 and k == 0:
@@ -263,7 +262,7 @@ simulation = Simulation.load_from_xml(
 )
 
 
-beads = simulation.syslist[0].motion.beads.copy()
+beads = simulation.syslist[0].motion.beads.clone()
 m = simulation.syslist[0].motion.beads.m.copy()
 nbeads = simulation.syslist[0].motion.beads.nbeads
 natoms = simulation.syslist[0].motion.beads.natoms

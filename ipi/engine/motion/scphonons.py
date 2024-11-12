@@ -45,7 +45,7 @@ class SCPhononsMover(Motion):
     def __init__(
         self,
         fixcom=False,
-        fixatoms=None,
+        fixatoms_dof=None,
         mode="sc",
         dynmat=np.zeros(0, float),
         prefix="",
@@ -72,7 +72,7 @@ class SCPhononsMover(Motion):
         delta: A 3Nx3N array that stores the dynamic matrix.
         """
 
-        super(SCPhononsMover, self).__init__(fixcom=fixcom, fixatoms=fixatoms)
+        super(SCPhononsMover, self).__init__(fixcom=fixcom, fixatoms_dof=fixatoms_dof)
 
         # Finite difference option.
         self.dynmatrix = dynmat
@@ -132,9 +132,9 @@ class SCPhononsMover(Motion):
 
         # Creates duplicate classes to simplify computation of forces.
         self.dof = 3 * self.beads.natoms
-        self.dbeads = self.beads.copy(nbeads=self.nparallel)
-        self.dcell = self.cell.copy()
-        self.dforces = self.forces.copy(self.dbeads, self.dcell)
+        self.dbeads = self.beads.clone(nbeads=self.nparallel)
+        self.dcell = self.cell.clone()
+        self.dforces = self.forces.clone(self.dbeads, self.dcell)
 
         # Sets temperature.
         self.temp = self.ensemble.temp
