@@ -22,6 +22,10 @@ from copy import copy
 
 import numpy as np
 
+import torch
+torch.set_default_dtype(torch.float64)
+
+
 from ipi.utils.io.inputs.io_xml import *
 from ipi.utils.units import unit_to_internal, unit_to_user
 
@@ -1231,9 +1235,18 @@ class InputArray(InputValue):
               in.
         """
 
-        super(InputArray, self).store(
-            value=np.array(value, dtype=self.type).flatten().copy(), units=units
-        )
+        if self.type is str:
+
+            super(InputArray, self).store(
+                value=np.array(value, dtype=self.type).flatten().copy(), units=units
+            )
+
+        else:
+
+            super(InputArray, self).store(
+                value=torch.tensor(value, dtype=self.type).flatten().clone(), units=units
+            )
+
         self.shape.store(value.shape)
 
         # if the shape is not specified, assume the array is linear.
@@ -1251,9 +1264,16 @@ class InputArray(InputValue):
 
         # if the shape is not specified, assume the array is linear.
         if self.shape.fetch() == (0,):
-            value = np.resize(value, 0).copy()
+            if isinstance(value, torch.Tensor):
+                value = torch.reshape(value, (0,)).clone()
+            else: 
+                value = np.reshape(value, 0,).copy()
+
         else:
-            value = value.reshape(self.shape.fetch()).copy()
+            if isinstance(value, torch.Tensor):
+                value = value.reshape(self.shape.fetch()).clone()
+            else:
+                value = value.reshape(self.shape.fetch()).copy()
 
         return value
 
@@ -1308,9 +1328,9 @@ class InputArray(InputValue):
         if mode == "manual":
             self.value = read_array(self.type, self._text)
         elif mode == "file":
-            self.value = np.loadtxt(
+            self.value = torch.from_numpy(np.loadtxt(
                 self._text.strip(), comments="#", dtype=self.type
-            ).flatten()
+            ).flatten())
         else:
             raise ValueError("Unsupported array reading mode")
 
