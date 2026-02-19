@@ -261,15 +261,10 @@ class Beads:
         ensemble as the temperature is required to calculate it.
         """
 
-        epath = 0.0
         q = dstrip(self.q)
         m = dstrip(self.m3)[0]
-        for b in range(self.nbeads):
-            if b > 0:
-                dq = q[b, :] - q[b - 1, :]
-            else:
-                dq = q[b, :] - q[self.nbeads - 1, :]
-            epath += np.dot(dq, m * dq)
+        dq = q - np.roll(q, 1, axis=0)
+        epath = np.sum(dq * m * dq)
         print(
             "WARNING: RETURNS AN INCORRECT RESULT IF OPEN PATHS ARE BEING USED. CALL NM.VSPRING INSTEAD!!"
         )
@@ -283,24 +278,10 @@ class Beads:
         ensemble as the temperature is required to calculate it.
         """
 
-        nbeads = self.nbeads
-        natoms = self.natoms
-        f = np.zeros((nbeads, 3 * natoms), float)
-
         q = dstrip(self.q)
         m = dstrip(self.m3)[0]
-        for b in range(nbeads):
-            if b > 0:
-                dq = q[b, :] - q[b - 1, :]
-            else:
-                dq = q[b, :] - q[self.nbeads - 1, :]
-            dq *= m
-            f[b] -= dq
-            if b > 0:
-                f[b - 1] += dq
-            else:
-                f[nbeads - 1] += dq
-        return f
+        dq = (q - np.roll(q, 1, axis=0)) * m
+        return np.roll(dq, -1, axis=0) - dq
 
     # A set of functions to access individual beads as Atoms objects
     def __len__(self):
