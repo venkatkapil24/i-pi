@@ -239,29 +239,27 @@ class Barostat:
         estimator.
         """
 
-        kst = np.zeros((3, 3), float)
         q = dstrip(self.beads.q)
         qc = dstrip(self.beads.qc)
         pc = dstrip(self.beads.pc)
         m = dstrip(self.beads.m)
-        na3 = 3 * self.beads.natoms
+
         fall = dstrip(self.forces.f)
         if self.bias is None:
             ball = fall * 0.00
         else:
             ball = dstrip(self.bias.f)
 
-        for b in range(self.beads.nbeads):
-            for i in range(3):
-                for j in range(i, 3):
-                    kst[i, j] -= np.dot(
-                        q[b, i:na3:3] - qc[i:na3:3], fall[b, j:na3:3] + ball[b, j:na3:3]
-                    )
+        qqc = (q - qc).reshape(-1, 3)
+        ftotal = (fall + ball).reshape(-1, 3)
+        kst = -noddot(qqc.T, ftotal)
 
         # NOTE: In order to have a well-defined conserved quantity, the Nf kT term in the
         # diagonal stress estimator must be taken from the centroid kinetic energy.
-        for i in range(3):
-            kst[i, i] += np.dot(pc[i:na3:3], pc[i:na3:3] / m) * self.beads.nbeads
+        pc3 = pc.reshape(-1, 3)
+        kst[0, 0] += noddot(pc3[:, 0], pc3[:, 0] / m) * self.beads.nbeads
+        kst[1, 1] += noddot(pc3[:, 1], pc3[:, 1] / m) * self.beads.nbeads
+        kst[2, 2] += noddot(pc3[:, 2], pc3[:, 2] / m) * self.beads.nbeads
 
         return kst
 
@@ -270,12 +268,10 @@ class Barostat:
         associated with the forces at a MTS level.
         """
 
-        kst = np.zeros((3, 3), float)
         q = dstrip(self.beads.q)
         qc = dstrip(self.beads.qc)
         pc = dstrip(self.beads.pc)
         m = dstrip(self.beads.m)
-        na3 = 3 * self.beads.natoms
         fall = dstrip(self.forces.mts_forces[level].f) * (
             1 + self.forces.coeffsc_part_1
         )
@@ -284,16 +280,15 @@ class Barostat:
         else:
             ball = dstrip(self.bias.f)
 
-        for b in range(self.beads.nbeads):
-            for i in range(3):
-                for j in range(i, 3):
-                    kst[i, j] -= np.dot(
-                        q[b, i:na3:3] - qc[i:na3:3], fall[b, j:na3:3] + ball[b, j:na3:3]
-                    )
+        qqc = (q - qc).reshape(-1, 3)
+        ftotal = (fall + ball).reshape(-1, 3)
+        kst = -noddot(qqc.T, ftotal)
 
         if level == self.nmtslevels - 1:
-            for i in range(3):
-                kst[i, i] += np.dot(pc[i:na3:3], pc[i:na3:3] / m) * self.beads.nbeads
+            pc3 = pc.reshape(-1, 3)
+            kst[0, 0] += noddot(pc3[:, 0], pc3[:, 0] / m) * self.beads.nbeads
+            kst[1, 1] += noddot(pc3[:, 1], pc3[:, 1] / m) * self.beads.nbeads
+            kst[2, 2] += noddot(pc3[:, 2], pc3[:, 2] / m) * self.beads.nbeads
 
         return kst
 
