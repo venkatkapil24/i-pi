@@ -110,6 +110,10 @@ The monitoring can be interrupted with CTRL+C when the run has finished (5000 st
 The i-PI [documentation](https://docs.ipi-code.org/onlinereso.html) has a list of
 available tutorials, recipes and other useful online resources.
 
+## CodeCoverage
+
+WIP
+
 ## Run the automatic test suite
 
 The automatic test suite is driven by [`tox`](https://tox.wiki/), a
