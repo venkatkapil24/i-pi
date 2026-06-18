@@ -1644,17 +1644,15 @@ class Properties:
 
         if ibead > -1:
             nbeads = 1
+            if not np.allclose(dm3, dm3[0]):
+                raise ValueError(
+                    "Bead kinetic energy is not a diagnostic for temperature when using a non-diagonal or inconsistent mass matrix. Do not print out bead kinetic energies."
+                )
+
             for i in range(self.beads.natoms):
                 if atom != "" and iatom != i and latom != self.beads.names[i]:
                     continue
                 k = 3 * i
-
-                # Checks if all the beads have the same mass. If not, raises an error.
-                mass_vals = [dm3[b, k] for b in range(self.beads.nbeads)]
-                if len(set(mass_vals)) > 1:
-                    raise ValueError(
-                        "Bead kinetic energy is not a diagnostic for temperature when using a non-diagonal or inconsistent mass matrix. Do not print out bead kinetic energies."
-                    )
 
                 kmd += (
                     p[ibead, k] ** 2 + p[ibead, k + 1] ** 2 + p[ibead, k + 2] ** 2
